@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Vs Edger — Duel Mode</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Rajdhani:wght@500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+
+:root{
+  --bg:#0d0a0f; --surface:#17111a; --surface2:#211724; --border:#3a2530;
+  --p1:#fb923c; --p1-dim:rgba(251,146,60,.15);
+  --p2:#dc2626; --p2-dim:rgba(220,38,38,.15);
+  --gold:#fbbf24; --green:#34d399; --text:#f1e6ea; --muted:#8a7480;
+  --glow-p1:rgba(251,146,60,.35); --glow-p2:rgba(220,38,38,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Crimson Text',Georgia,serif;overflow-x:hidden}
+body{background-image:radial-gradient(ellipse 60% 35% at 15% 0%,rgba(251,146,60,.10) 0%,transparent 65%),radial-gradient(ellipse 60% 35% at 85% 0%,rgba(220,38,38,.10) 0%,transparent 65%);min-height:100vh}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit}
+::selection{background:var(--gold);color:#1a1116}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.screen{display:none;min-height:100vh;padding:20px 16px 48px;flex-direction:column;align-items:center}
+.screen.active{display:flex}
+.wrap{width:100%;max-width:560px}
+
+.page-title{font-family:'Cinzel',serif;font-weight:900;font-size:clamp(1.9rem,7vw,2.7rem);letter-spacing:.1em;text-align:center;background:linear-gradient(120deg,var(--p1) 0%,var(--gold) 45%,var(--p2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 20px rgba(251,146,60,.25));margin-bottom:2px}
+.vs-divider{display:flex;align-items:center;gap:10px;justify-content:center;margin:4px 0 18px}
+.vs-divider .line{height:1px;width:40px;background:linear-gradient(90deg,transparent,var(--border))}
+.vs-divider .line.r{background:linear-gradient(90deg,var(--border),transparent)}
+.vs-divider .x{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.3em;color:var(--muted)}
+.page-subtitle{font-style:italic;color:var(--muted);text-align:center;font-size:1.02rem;margin-bottom:24px;line-height:1.5}
+
+.mode-grid{display:grid;grid-template-columns:1fr;gap:12px;width:100%}
+.mode-card{background:linear-gradient(150deg,var(--surface) 0%,var(--surface2) 100%);border:1px solid var(--border);border-radius:14px;padding:16px 18px;text-align:left;position:relative;overflow:hidden;transition:border-color .2s,transform .15s}
+.mode-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--p1),var(--p2))}
+.mode-card:active{transform:scale(.98)}
+.mode-card .m-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.2rem;letter-spacing:.03em;margin-bottom:4px}
+.mode-card .m-desc{font-size:.94rem;color:var(--muted);line-height:1.4}
+.mode-card .m-tag{display:inline-block;margin-top:8px;font-family:'Rajdhani',sans-serif;font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.25);padding:2px 8px;border-radius:20px}
+
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-bottom:18px}
+.role-card{border-radius:14px;padding:22px 14px;text-align:center;border:1px solid var(--border)}
+.role-card.p1{background:linear-gradient(150deg,var(--p1-dim),transparent);border-color:rgba(251,146,60,.35)}
+.role-card.p2{background:linear-gradient(150deg,var(--p2-dim),transparent);border-color:rgba(220,38,38,.35)}
+.role-card .r-icon{font-size:1.8rem;margin-bottom:6px}
+.role-card .r-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:4px}
+.role-card.p1 .r-title{color:var(--p1)}
+.role-card.p2 .r-title{color:var(--p2)}
+.role-card .r-desc{font-size:.85rem;color:var(--muted);line-height:1.35}
+
+.field{width:100%;margin-bottom:16px}
+.field label{display:block;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.field input[type=text]{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-size:1.05rem;font-family:'Rajdhani',sans-serif}
+.field input[type=text]:focus{outline:none;border-color:var(--p1)}
+.field input.p2-focus:focus{border-color:var(--p2)}
+
+.slider-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.slider-row .s-label{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.9rem}
+.slider-row .s-val{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.95rem;color:var(--gold)}
+input[type=range]{width:100%;height:6px;border-radius:4px;background:var(--surface2);-webkit-appearance:none;margin-bottom:16px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--p1),var(--gold));box-shadow:0 0 10px var(--glow-p1)}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--p1),var(--gold))}
+
+.btn{width:100%;padding:15px;border-radius:12px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.1rem;letter-spacing:.04em;text-align:center;margin-bottom:10px;transition:transform .1s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,var(--p1),var(--p2));color:#fff;box-shadow:0 4px 20px var(--glow-p2)}
+.btn-secondary{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--muted)}
+.btn-sm{padding:10px;font-size:.95rem}
+.back-link{align-self:flex-start;color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.92rem;margin-bottom:14px}
+
+.code-box{width:100%;background:var(--surface);border:1px dashed var(--gold);border-radius:12px;padding:18px;text-align:center;margin-bottom:12px}
+.code-box .c-label{font-family:'Rajdhani',sans-serif;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.code-box .c-value{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.25rem;letter-spacing:.06em;color:var(--gold);word-break:break-all;line-height:1.45;user-select:all;-webkit-user-select:all}
+
+.duel-header{width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.duel-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem}
+.duel-name.side-p1{color:var(--p1)}
+.duel-name.side-p2{color:var(--p2)}
+.duel-timer{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.6rem;text-align:center;width:100%}
+
+.radar-wrap{position:relative;width:230px;height:230px;margin:18px auto 26px}
+.radarRing{position:absolute;inset:0;border-radius:50%;border:2px solid var(--border)}
+.radarPulse{position:absolute;inset:0;border-radius:50%;border:2px solid var(--p1);opacity:0;transform:scale(.6)}
+.radarPulse.active{animation:pulseOut .6s ease-out}
+@keyframes pulseOut{0%{opacity:.8;transform:scale(.5)}100%{opacity:0;transform:scale(1.15)}}
+.radarCore{position:absolute;left:50%;top:50%;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:50%;background:radial-gradient(circle,var(--p1) 0%,var(--p2) 100%);box-shadow:0 0 30px var(--glow-p1);transition:transform .15s}
+.radarCore.pop{transform:scale(1.15)}
+.bpm-readout{position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.85rem;color:var(--muted);white-space:nowrap}
+
+.zone-bar{width:100%;height:10px;border-radius:6px;background:var(--surface2);overflow:hidden;margin-bottom:6px}
+.zone-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--gold),var(--p2));transition:width .4s}
+.zone-label{font-family:'Rajdhani',sans-serif;font-size:.8rem;color:var(--muted);text-align:center;margin-bottom:16px}
+
+.nudge-row{display:flex;gap:10px;width:100%;margin-bottom:10px}
+.nudge-btn{flex:1;padding:14px 8px;border-radius:10px;border:1px solid var(--border);background:var(--surface);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.9rem;display:flex;flex-direction:column;align-items:center;gap:2px}
+.nudge-btn .n-icon{font-size:1.3rem}
+.nudge-btn.push{border-color:rgba(220,38,38,.4)}
+.nudge-btn.ease{border-color:rgba(52,211,153,.4)}
+.nudge-hint{font-size:.8rem;color:var(--muted);text-align:center;margin-bottom:14px;line-height:1.4}
+
+.action-row{display:flex;gap:10px;width:100%;margin-top:8px}
+.btn-edge{background:linear-gradient(135deg,var(--gold),#f59e0b);color:#1a1116}
+.btn-over{background:var(--surface2);border:1px solid var(--p2);color:var(--p2)}
+.btn-bank{background:linear-gradient(135deg,var(--green),#059669);color:#08231a}
+
+.badge{display:flex;justify-content:center;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:8px 14px;margin:0 auto 14px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.95rem;color:var(--gold);width:fit-content}
+
+.countdown-ring{width:200px;height:200px;margin:16px auto;position:relative;display:flex;align-items:center;justify-content:center}
+.countdown-ring svg{transform:rotate(-90deg)}
+.countdown-ring .cd-num{position:absolute;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:3rem;color:var(--gold)}
+.countdown-label{text-align:center;font-family:'Rajdhani',sans-serif;font-weight:600;color:var(--muted);margin-bottom:4px;letter-spacing:.06em;text-transform:uppercase;font-size:.85rem}
+
+.result-hero{text-align:center;margin-bottom:20px}
+.result-hero .r-winner{font-family:'Cinzel',serif;font-weight:900;font-size:1.5rem;background:linear-gradient(120deg,var(--p1),var(--gold),var(--p2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.3}
+.big-stat{text-align:center;margin-bottom:20px}
+.big-stat .bs-val{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:2.6rem;color:var(--gold);line-height:1}
+.big-stat .bs-lab{font-family:'Rajdhani',sans-serif;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.substat{text-align:center;color:var(--muted);font-size:.95rem;margin-bottom:4px}
+
+.compare-table{width:100%;border-collapse:collapse;margin-bottom:20px}
+.compare-table th{font-family:'Rajdhani',sans-serif;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 6px;text-align:center;border-bottom:1px solid var(--border)}
+.compare-table th.stat-label{text-align:left}
+.compare-table th.th-p1{color:var(--p1)}
+.compare-table th.th-p2{color:var(--p2)}
+.compare-table td{padding:10px 6px;text-align:center;font-family:'Rajdhani',sans-serif;font-weight:600;border-bottom:1px solid var(--surface2);font-size:.98rem}
+.compare-table td.stat-label{text-align:left;color:var(--muted);font-weight:500;font-size:.9rem}
+.compare-table td.win{color:var(--gold);font-weight:700}
+.compare-table td.win::after{content:' ✦'}
+
+.share-box{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.share-box pre{font-family:'Rajdhani',sans-serif;font-size:.9rem;white-space:pre-wrap;word-break:break-word;line-height:1.5;user-select:all;-webkit-user-select:all}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:1px solid var(--gold);color:var(--gold);padding:10px 20px;border-radius:20px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:all .25s;z-index:100;max-width:88vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.err-msg{color:var(--p2);font-size:.88rem;margin:-8px 0 12px;min-height:1.2em}
+</style>
+</head>
+<body>
+<div id="toast" class="toast"></div>
+<div id="app"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   VS EDGER — one code, one direction.
+   P1 plays -> gets ONE code -> sends it.
+   P2 enters code -> plays the identical pattern -> sees the
+   full comparison immediately and copies the Discord summary.
+   Nothing needs to travel back.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ---------- utils ---------- */
+function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
+function mkRng(seed){let s=(seed^0xdeadbeef)>>>0;return()=>{s^=s<<13;s^=s>>>17;s^=s<<5;return (s>>>0)/0xffffffff;};}
+function toB36(n,pad){let s=Math.max(0,Math.round(n)).toString(36).toUpperCase();while(s.length<pad)s='0'+s;return s;}
+function fromB36(s){const v=parseInt(s,36);if(isNaN(v))throw new Error('bad');return v;}
+function fmtTime(ms){const t=Math.max(0,Math.round(ms/1000));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0');}
+/* Challengers get a band, never the exact figure. Enough to know roughly
+   what they're chasing, not enough to stop the instant they're one second ahead. */
+const BANDS=[60,120,180,300,420,600,900,1200,1800,2700,3600,5400,7200];
+function mins(s){
+  const m=s/60;
+  if(m<60)return m+' min';
+  return (m/60)+(m/60===1?' hour':' hours');
+}
+function timeBand(ms){
+  const s=Math.round(ms/1000);
+  if(s<BANDS[0])return 'under a minute';
+  for(let i=0;i<BANDS.length-1;i++) if(s<BANDS[i+1]) return 'somewhere between '+mins(BANDS[i])+' and '+mins(BANDS[i+1]);
+  return 'over '+mins(BANDS[BANDS.length-1]);
+}
+function countBand(n){
+  if(n<=0)return 'no edges';
+  if(n<=2)return '1\u20132 edges';
+  if(n<=4)return '3\u20134 edges';
+  if(n<=7)return '5\u20137 edges';
+  if(n<=11)return '8\u201311 edges';
+  return '12+ edges';
+}
+function targetHint(){
+  const r=S.p1Result,n=S.p1Name;
+  if(S.mode==='chicken')return 'No idea how far they pushed it. That\'s the whole game.';
+  if(S.mode==='edgewithme')return S.ewmOffsets.length+' edge'+(S.ewmOffsets.length===1?'':'s')+' to match.';
+  if(S.mode==='battle')return n+' landed '+countBand(r.edgeMarks.length)+'.';
+  if(S.mode==='fastest')return n+' got there in '+timeBand(r.totalMs)+'.';
+  if(S.mode==='sustain')return n+' sustained it for '+timeBand(r.totalMs)+'.';
+  return n+' held out '+timeBand(r.totalMs)+'.';
+}
+
+/* ---------- modes ---------- */
+const MODES={
+  longest:{code:'LE',title:'Longest Edge',tag:'Endurance',
+    desc:'Same fixed pattern for both of you. Whoever holds out longest before edging wins.',
+    goal:'Hold out as long as you can before you edge.'},
+  fastest:{code:'FE',title:'Fastest Edge',tag:'Sprint',
+    desc:'Same fixed pattern. First to reach the edge wins \u2014 chase it, don\'t resist it.',
+    goal:'Get to the edge as fast as you can.'},
+  sustain:{code:'SU',title:'Sustain Standoff',tag:'Endurance',
+    desc:'The pattern hovers right under the edge and never lets up. Whoever stays under it longest wins.',
+    goal:'Stay under the edge as long as you can. Tap out before you go over.'},
+  battle:{code:'EB',title:'Edge Battle',tag:'Set Time',
+    desc:'A fixed time limit. Whoever racks up the most edges before the clock runs out wins.',
+    goal:'Edge as many times as you can before time runs out.'},
+  chicken:{code:'CH',title:'Chicken',tag:'Nerve',
+    desc:'Your time only counts if you bank it. Push too far and go over \u2014 you score zero.',
+    goal:'Ride it as long as you dare, then bank before you go over.'},
+  settrap:{code:'ST',title:'Set the Trap',tag:'Shaped',
+    desc:'The one mode where you build the pattern as you ride it. Push harder or ease off \u2014 then they face exactly what you made, with no way to soften it.',
+    goal:'Shape it as you ride it. Hold out longest to win.'},
+  edgewithme:{code:'WM',title:'Edge With Me',tag:'Sync',
+    desc:'Player One marks their edges. Player Two gets a countdown and has to land theirs at the same moment.',
+    goal:'Mark each edge as you reach it.'}
+};
+const BY_CODE=Object.fromEntries(Object.entries(MODES).map(([k,v])=>[v.code,k]));
+
+/* ---------- state ---------- */
+/* TOK lives outside S and only ever increases. If it were stored in S,
+   reset() would zero it and a still-pending timer from an abandoned run
+   could match the new run's token and start injecting blocks into it. */
+let TOK=0;
+const S={};
+function reset(){
+  TOK++;                                  // orphan any in-flight scheduler
+  clearTimeout(S.timerID);clearInterval(S._ci);clearInterval(S._cd);clearTimeout(S._to);
+  Object.keys(S).forEach(k=>delete S[k]);
+  Object.assign(S,{
+    screen:'home',role:null,mode:null,seed:null,
+    settings:{minBpm:50,maxBpm:130,intensity:5,target:5,bias:0},
+    p1Name:'',p2Name:'',code:'',
+    audioCtx:null,nextNoteTime:0,lookahead:25,aheadTime:.12,
+    timerID:null,running:false,
+    curBlock:null,blockIdx:0,
+    liveBias:0,nudges:[],       // [[blockIdx, bias+3]]
+    playedBlocks:[],
+    playStart:0,edgeMarks:[],wentOver:false,banked:false,
+    p1Result:null,p2Result:null,
+    ewmOffsets:[],ewmMatches:[],ewmIdx:0,ewmArmed:false,ewmTarget:0
+  });
+}
+reset();
+const app=document.getElementById('app');
+function nav(s){S.screen=s;render();window.scrollTo(0,0);}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2600);}
+
+/* ---------- copy with non-HTTPS fallback ---------- */
+function copyText(txt,label){
+  let ok=false;
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=txt;ta.setAttribute('readonly','');
+    ta.style.position='fixed';ta.style.top='0';ta.style.left='0';ta.style.opacity='0';
+    document.body.appendChild(ta);
+    ta.focus();ta.select();ta.setSelectionRange(0,txt.length);
+    ok=document.execCommand('copy');
+    document.body.removeChild(ta);
+  }catch(e){ok=false;}
+  if(ok){toast(label+' copied');return;}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>toast(label+' copied'))
+      .catch(()=>toast('Copy blocked — press and hold the text to copy'));
+    return;
+  }
+  toast('Copy blocked — press and hold the text to copy');
+}
+
+/* ═══════════ PATTERN GENERATION ═══════════
+   Deterministic: same seed + same settings + same nudge schedule
+   => byte-identical block sequence. That's what lets one short code
+   reproduce exactly what Player One felt, without storing every block. */
+function nextBlock(rng,prevBpm,bias,st,mode){
+  const range=st.maxBpm-st.minBpm;
+  const lo=clamp(Math.round(st.minBpm+bias*range*.04),20,215);
+  const hi=clamp(Math.round(st.maxBpm+bias*range*.08),lo+8,220);
+  const aggro=clamp(st.intensity/9,.15,1);
+  if(mode==='sustain'){
+    // hover in the upper band — never a full drop, never a full peak
+    const band=lo+(hi-lo)*.55;
+    const bpm=Math.round(clamp(band+(rng()-.35)*(hi-lo)*.32,lo,hi));
+    return {bpm,secs:Math.round(8+rng()*7)};
+  }
+  const up=prevBpm===null||prevBpm<=lo+(hi-lo)*.35;
+  const bpm=up
+    ? Math.round(clamp(lo+(hi-lo)*(.55+aggro*.4+rng()*.2),lo,hi))
+    : Math.round(clamp(lo+(hi-lo)*(.15+rng()*.2*(1-aggro*.5)),lo,hi));
+  const secs=Math.max(3,Math.round((up?10-aggro*4:14-aggro*6)+(rng()-.5)*5));
+  return {bpm,secs:Math.min(35,secs)};
+}
+
+/* ═══════════ CODE ═══════════
+   MODE-SEED-SETTINGS-NUDGES-RESULT   (one code, sent one way) */
+function packSettings(s){return toB36(s.minBpm,2)+toB36(s.maxBpm,2)+toB36(s.intensity,1)+toB36(s.target,2);}
+function unpackSettings(x){return{minBpm:fromB36(x.slice(0,2)),maxBpm:fromB36(x.slice(2,4)),intensity:fromB36(x.slice(4,5)),target:fromB36(x.slice(5,7)),bias:0};}
+function packNudges(n){return toB36(n.length,1)+n.map(([i,b])=>toB36(Math.min(1295,i),2)+toB36(b,1)).join('');}
+function unpackNudges(x){const c=fromB36(x.slice(0,1));const out=[];let i=1;for(let k=0;k<c;k++){out.push([fromB36(x.slice(i,i+2)),fromB36(x.slice(i+2,i+3))]);i+=3;}return out;}
+function packResult(r){
+  let f=0; if(r.wentOver)f=1; else if(r.banked)f=2;
+  let s=toB36(Math.round(r.totalMs/1000),3)+toB36(f,1)+toB36(Math.min(35,(r.edgeMarks||[]).length),1);
+  (r.edgeMarks||[]).slice(0,35).forEach(ms=>s+=toB36(Math.round(ms/1000),3));
+  return s;
+}
+function unpackResult(x){
+  const totalMs=fromB36(x.slice(0,3))*1000;
+  const f=fromB36(x.slice(3,4));
+  const n=fromB36(x.slice(4,5));
+  const edgeMarks=[];let i=5;
+  for(let k=0;k<n;k++){edgeMarks.push(fromB36(x.slice(i,i+3))*1000);i+=3;}
+  return {totalMs,wentOver:f===1,banked:f===2,edgeMarks};
+}
+function buildCode(){
+  return MODES[S.mode].code+'-'+toB36(S.seed,4)+'-'+packSettings(S.settings)
+    +'-'+packNudges(S.nudges)+'-'+packResult(S.p1Result);
+}
+function parseCode(raw){
+  const p=String(raw).trim().toUpperCase().replace(/\s+/g,'').split('-');
+  const bad=()=>{throw new Error("That code doesn't look right — check it and try again.");};
+  if(p.length!==5||!BY_CODE[p[0]])bad();
+  try{
+    const mode=BY_CODE[p[0]];
+    const seed=fromB36(p[1]);
+    const settings=unpackSettings(p[2]);
+    const nudges=unpackNudges(p[3]);
+    const result=unpackResult(p[4]);
+    if(!settings.maxBpm||settings.maxBpm<settings.minBpm)bad();
+    return {mode,seed,settings,nudges,result};
+  }catch(e){bad();}
+}
+
+/* ═══════════ AUDIO ═══════════ */
+function ensureAudio(){
+  if(!S.audioCtx)S.audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(S.audioCtx.state==='suspended')S.audioCtx.resume();
+}
+function click(t){
+  const c=S.audioCtx,o=c.createOscillator(),g=c.createGain();
+  o.frequency.value=880;
+  g.gain.setValueAtTime(.0001,t);
+  g.gain.exponentialRampToValueAtTime(.3,t+.005);
+  g.gain.exponentialRampToValueAtTime(.0001,t+.08);
+  o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+.09);
+}
+function curBpm(){return S.curBlock?S.curBlock.bpm:S.settings.minBpm;}
+function tick(){
+  if(!S.running)return;
+  const c=S.audioCtx;
+  while(S.nextNoteTime<c.currentTime+S.aheadTime){
+    click(S.nextNoteTime);
+    const d=S.nextNoteTime-c.currentTime;
+    setTimeout(pulse,Math.max(0,d*1000));
+    S.nextNoteTime+=60/Math.max(20,curBpm());
+  }
+  S.timerID=setTimeout(tick,S.lookahead);
+}
+function pulse(){
+  const r=document.getElementById('rPulse'),c=document.getElementById('rCore');
+  if(r){r.classList.remove('active');void r.offsetWidth;r.classList.add('active');}
+  if(c){c.classList.add('pop');setTimeout(()=>c.classList.remove('pop'),150);}
+  const b=document.getElementById('bpmReadout');
+  if(b)b.textContent=Math.round(curBpm())+' bpm';
+}
+/* One scheduler for both players. P1's bias comes from live button
+   presses (and is recorded). P2's bias comes from the recorded schedule. */
+function runBlocks(){
+  const tok=++TOK;
+  const rng=mkRng(S.seed);
+  const sched={}; S.nudges.forEach(([i,b])=>sched[i]=b-3);
+  function step(prev){
+    if(tok!==TOK||!S.running)return;
+    if(S.role==='p2'&&sched[S.blockIdx]!==undefined)S.liveBias=sched[S.blockIdx];
+    const b=nextBlock(rng,prev,S.liveBias,S.settings,S.mode);
+    S.curBlock=b;S.playedBlocks.push(b);
+    const idx=S.blockIdx++;
+    setTimeout(()=>{if(tok===TOK&&S.running)step(b.bpm);},b.secs*1000);
+  }
+  step(null);
+}
+function startMetro(){
+  ensureAudio();
+  S.running=true;S.blockIdx=0;S.playedBlocks=[];
+  S.nextNoteTime=S.audioCtx.currentTime+.05;
+  tick();runBlocks();
+}
+function stopMetro(){S.running=false;TOK++;clearTimeout(S.timerID);}
+
+/* ═══════════ ROUTER ═══════════ */
+function render(){
+  const f={home:vHome,role:vRole,setup:vSetup,play:vPlay,p1done:vP1Done,
+    enter:vEnter,ready:vReady,ewmPlay:vEwmPlay,compare:vCompare}[S.screen];
+  if(f)f();
+}
+
+/* ---------- home ---------- */
+function vHome(){
+  app.innerHTML=`<div class="screen active"><div class="wrap">
+    <div class="page-title">VS EDGER</div>
+    <div class="vs-divider"><div class="line"></div><div class="x">DUEL MODE</div><div class="line r"></div></div>
+    <div class="page-subtitle">Play it. Send one code. See who held out.</div>
+    <div class="mode-grid" id="mg"></div></div></div>`;
+  const g=document.getElementById('mg');
+  Object.entries(MODES).forEach(([k,m])=>{
+    const b=document.createElement('button');
+    b.className='mode-card';
+    b.innerHTML=`<div class="m-title">${m.title}</div><div class="m-desc">${m.desc}</div><div class="m-tag">${m.tag}</div>`;
+    b.onclick=()=>{S.mode=k;nav('role');};
+    g.appendChild(b);
+  });
+}
+
+/* ---------- role ---------- */
+function vRole(){
+  const m=MODES[S.mode];
+  app.innerHTML=`<div class="screen active"><div class="wrap">
+    <button class="back-link" onclick="nav('home')">‹ Back</button>
+    <div class="page-title" style="font-size:1.6rem">${m.title}</div>
+    <div class="page-subtitle">${m.desc}</div>
+    <div class="role-grid">
+      <button class="role-card p1" onclick="beP1()"><div class="r-icon">🔶</div>
+        <div class="r-title">I'll go first</div>
+        <div class="r-desc">Set it up, play it, then send one code.</div></button>
+      <button class="role-card p2" onclick="beP2()"><div class="r-icon">🔻</div>
+        <div class="r-title">I have a code</div>
+        <div class="r-desc">Take on the exact run they just did.</div></button>
+    </div></div></div>`;
+}
+function beP1(){S.role='p1';S.seed=Math.floor(Math.random()*1679616);S.settings.target=S.mode==='battle'?5:(S.mode==='edgewithme'?2:0);nav('setup');}
+function beP2(){S.role='p2';nav('enter');}
+
+/* ---------- setup ---------- */
+function esc(s){return String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function vSetup(){
+  const s=S.settings;
+  let extra='';
+  if(S.mode==='battle')extra=`<div class="slider-row"><span class="s-label">Time limit</span><span class="s-val" id="tv">${s.target} min</span></div><input type="range" min="1" max="20" value="${s.target}" id="tS">`;
+  if(S.mode==='edgewithme')extra=`<div class="slider-row"><span class="s-label">Edges to set</span><span class="s-val" id="tv">${s.target}</span></div><input type="range" min="1" max="6" value="${s.target}" id="tS">`;
+  app.innerHTML=`<div class="screen active"><div class="wrap">
+    <button class="back-link" onclick="nav('role')">‹ Back</button>
+    <div class="page-title" style="font-size:1.6rem">Set It Up</div>
+    <div class="page-subtitle">${S.mode==='settrap'?'You ride this first and shape it as you go. Whatever you build is exactly what they\'ll face.':'You play this first. Your opponent gets this exact pattern \u2014 neither of you can change it once it starts.'}</div>
+    <div class="field"><label>Your name</label><input type="text" id="n1" maxlength="18" placeholder="Player One" value="${esc(S.p1Name)}"></div>
+    <div class="slider-row"><span class="s-label">Slowest speed</span><span class="s-val" id="mv">${s.minBpm} bpm</span></div>
+    <input type="range" min="30" max="120" value="${s.minBpm}" id="mS">
+    <div class="slider-row"><span class="s-label">Fastest speed</span><span class="s-val" id="xv">${s.maxBpm} bpm</span></div>
+    <input type="range" min="60" max="200" value="${s.maxBpm}" id="xS">
+    <div class="slider-row"><span class="s-label">Intensity</span><span class="s-val" id="iv">${s.intensity}/9</span></div>
+    <input type="range" min="0" max="9" value="${s.intensity}" id="iS">
+    ${extra}
+    <button class="btn btn-primary" onclick="go()">Start My Run →</button>
+  </div></div>`;
+  const $=id=>document.getElementById(id);
+  $('mS').oninput=e=>{s.minBpm=+e.target.value;if(s.minBpm>s.maxBpm-10){s.maxBpm=s.minBpm+10;$('xS').value=s.maxBpm;$('xv').textContent=s.maxBpm+' bpm';}$('mv').textContent=s.minBpm+' bpm';};
+  $('xS').oninput=e=>{s.maxBpm=+e.target.value;if(s.maxBpm<s.minBpm+10){s.minBpm=Math.max(30,s.maxBpm-10);$('mS').value=s.minBpm;$('mv').textContent=s.minBpm+' bpm';}$('xv').textContent=s.maxBpm+' bpm';};
+  $('iS').oninput=e=>{s.intensity=+e.target.value;$('iv').textContent=s.intensity+'/9';};
+  if($('tS'))$('tS').oninput=e=>{s.target=+e.target.value;$('tv').textContent=S.mode==='battle'?s.target+' min':s.target;};
+}
+function go(){
+  S.p1Name=document.getElementById('n1').value.trim()||'Player One';
+  startRun();
+}
+
+/* ---------- play ---------- */
+function startRun(){
+  S.playStart=Date.now();S.edgeMarks=[];S.wentOver=false;S.banked=false;
+  S.liveBias=0;S.ewmMatches=[];S.ewmIdx=0;S.ewmArmed=false;
+  if(S.mode==='edgewithme'&&S.role==='p2'){nav('ewmPlay');startMetro();startClock();armNextEwm();return;}
+  nav('play');startMetro();startClock();
+}
+function startClock(){
+  clearInterval(S._ci);
+  S._ci=setInterval(()=>{
+    paintClock();
+    if(S.mode==='battle'&&(Date.now()-S.playStart)/1000>=S.settings.target*60)finish('time');
+    if(S.mode==='sustain')paintZone();
+  },250);
+}
+function paintClock(){
+  const el=document.getElementById('clk');if(!el)return;
+  const e=Math.floor((Date.now()-S.playStart)/1000);
+  if(S.mode==='battle'){
+    const r=Math.max(0,S.settings.target*60-e);
+    el.textContent=Math.floor(r/60)+':'+String(r%60).padStart(2,'0')+' left';
+  } else el.textContent=Math.floor(e/60)+':'+String(e%60).padStart(2,'0');
+}
+function paintZone(){
+  const f=document.getElementById('zf');if(!f)return;
+  const b=S.curBlock?S.curBlock.bpm:S.settings.minBpm;
+  const pct=clamp((b-S.settings.minBpm)/Math.max(1,S.settings.maxBpm-S.settings.minBpm),0,1);
+  f.style.width=Math.round(pct*100)+'%';
+}
+function vPlay(){
+  const p1=S.role==='p1',m=MODES[S.mode];
+  const name=p1?S.p1Name:S.p2Name;
+  let mid=`<div class="radar-wrap"><div class="radarRing"></div><div class="radarPulse" id="rPulse"></div>
+      <div class="radarCore" id="rCore"></div><div class="bpm-readout" id="bpmReadout">— bpm</div></div>`;
+  if(S.mode==='sustain')mid+=`<div class="zone-bar"><div class="zone-fill" id="zf" style="width:50%"></div></div><div class="zone-label">How hard it's holding you</div>`;
+  if(S.mode==='battle')mid+=`<div class="badge" id="eb">${S.edgeMarks.length} edge${S.edgeMarks.length===1?'':'s'}</div>`;
+  if(S.mode==='edgewithme')mid+=`<div class="badge">${Math.max(0,S.settings.target-S.edgeMarks.length)} edge${S.settings.target-S.edgeMarks.length===1?'':'s'} left to mark</div>`;
+
+  let nudge='';
+  if(S.mode==='settrap'){
+    if(p1){
+      nudge=`<div class="nudge-row">
+        <button class="nudge-btn push" onclick="nudge(1)"><span class="n-icon">\u{1F53A}</span>Push harder</button>
+        <button class="nudge-btn ease" onclick="nudge(-1)"><span class="n-icon">\u{1F53B}</span>Ease off</button></div>
+        <div class="nudge-hint">This reshapes the run from here on \u2014 and it's baked into the code they'll face.</div>`;
+    }else{
+      nudge=`<div class="nudge-hint">You're riding the exact run ${esc(S.p1Name)} built \u2014 pushes, eases and all. No softening it.</div>`;
+    }
+  }
+  let actions='';
+  if(S.mode==='chicken'){
+    actions=`<div class="action-row">
+      <button class="btn btn-bank" onclick="finish('bank')">Bank It</button>
+      <button class="btn btn-over" onclick="finish('over')">Went Over</button></div>
+      <div class="nudge-hint">Bank to keep your time. Go over and you score zero.</div>`;
+  }else if(S.mode==='sustain'){
+    actions=`<div class="action-row">
+      <button class="btn btn-edge" onclick="finish('tap')">Tap Out</button>
+      <button class="btn btn-over" onclick="finish('over')">Went Over</button></div>
+      <div class="nudge-hint">Tap out to bank your time. Go over and the run ends there.</div>`;
+  }else if(S.mode==='battle'||S.mode==='edgewithme'){
+    actions=`<div class="action-row">
+      <button class="btn btn-edge" onclick="markEdge()">I'm Edging</button>
+      <button class="btn btn-over" onclick="finish('over')">Went Over</button></div>
+      ${S.mode==='edgewithme'&&S.edgeMarks.length?`<button class="btn btn-secondary btn-sm" onclick="finish('done')">Done — finish recording</button>`:''}`;
+  }else{
+    actions=`<div class="action-row">
+      <button class="btn btn-edge" onclick="markEdge()">I Edged</button>
+      <button class="btn btn-over" onclick="finish('over')">Went Over</button></div>`;
+  }
+
+  app.innerHTML=`<div class="screen active"><div class="wrap">
+    <div class="duel-header"><div class="duel-name side-${p1?'p1':'p2'}">${esc(name)}</div>
+    <div class="duel-name" style="color:var(--muted);font-size:.85rem">${m.title}</div></div>
+    <div class="duel-timer" id="clk">0:00</div>
+    ${mid}${nudge}${actions}
+    <button class="btn btn-ghost btn-sm" style="margin-top:14px" onclick="abandon()">Abandon run</button>
+  </div></div>`;
+  paintClock();
+}
+function nudge(d){
+  const before=S.liveBias;
+  S.liveBias=clamp(S.liveBias+d,-3,3);
+  if(S.liveBias===before){toast(d>0?'Already at the hardest setting':'Already at the gentlest setting');return;}
+  if(S.nudges.length<30)S.nudges.push([S.blockIdx,S.liveBias+3]);
+  toast(d>0?'Pushing harder':'Easing off');
+}
+function markEdge(){
+  S.edgeMarks.push(Date.now()-S.playStart);
+  if(S.mode==='battle'){
+    const b=document.getElementById('eb');
+    if(b)b.textContent=S.edgeMarks.length+' edge'+(S.edgeMarks.length===1?'':'s');
+    toast('Edge '+S.edgeMarks.length+' logged');return;
+  }
+  if(S.mode==='edgewithme'){
+    toast('Edge '+S.edgeMarks.length+' recorded');
+    if(S.edgeMarks.length>=S.settings.target){finish('done');return;}
+    render();return;
+  }
+  finish('edged');
+}
+function abandon(){stopMetro();clearInterval(S._ci);reset();nav('home');}
+
+function finish(how){
+  stopMetro();clearInterval(S._ci);
+  const r={totalMs:Date.now()-S.playStart,edgeMarks:S.edgeMarks.slice(),
+    wentOver:how==='over',banked:how==='bank'};
+  if(S.role==='p1'){
+    S.p1Result=r;S.code=buildCode();nav('p1done');
+  }else{
+    S.p2Result=r;nav('compare');
+  }
+}
+
+/* ---------- P1 done: ONE code ---------- */
+function vP1Done(){
+  const r=S.p1Result,m=MODES[S.mode];
+  app.innerHTML=`<div class="screen active"><div class="wrap">
+    <div class="result-hero"><div class="r-winner">Your run is locked in</div></div>
+    <div class="big-stat"><div class="bs-val">${scoreText(r)}</div><div class="bs-lab">${scoreLabel()}</div></div>
+    ${subStats(r)}
+    <div class="page-subtitle" style="margin:18px 0 12px">Send this one code to your opponent. It carries the exact pattern you just rode <em>and</em> your score — they'll see the comparison when they finish.</div>
+    <div class="code-box"><div class="c-label">Duel Code</div><div class="c-value" id="dc">${S.code}</div></div>
+    <button class="btn btn-primary" onclick="copyText(S.code,'Duel code')">Copy Duel Code</button>
+    <button class="btn btn-ghost" onclick="abandon()">Back to modes</button>
+  </div></div>`;
+}
+function scoreText(r){
+  if(S.mode==='battle')return String(r.edgeMarks.length);
+  if(S.mode==='chicken')return r.wentOver?'0:00':fmtTime(r.totalMs);
+  if(S.mode==='edgewithme')return String(r.edgeMarks.length);
+  return fmtTime(r.totalMs);
+}
+function scoreLabel(){
+  if(S.mode==='battle')return 'Edges landed';
+  if(S.mode==='chicken')return 'Banked time';
+  if(S.mode==='edgewithme')return 'Edges set';
+  if(S.mode==='fastest')return 'Time to edge';
+  if(S.mode==='sustain')return 'Time sustained';
+  return 'Time held';
+}
+function isTimeMode(){return ['longest','sustain','settrap','fastest','chicken'].includes(S.mode);}
+function subStats(r){
+  let h='';
+  if(S.mode==='chicken'&&r.wentOver)h+=`<div class="substat" style="color:var(--p2)">You went over — no score banked</div>`;
+  if(S.mode!=='chicken'&&r.wentOver)h+=`<div class="substat" style="color:var(--p2)">Went over the edge</div>`;
+  if(S.mode==='battle')h+=`<div class="substat">Over ${fmtTime(r.totalMs)}</div>`;
+  return h;
+}
+
+/* ---------- P2 enters code ---------- */
+function vEnter(){
+  app.innerHTML=`<div class="screen active"><div class="wrap">
+    <button class="back-link" onclick="nav('home')">‹ Back</button>
+    <div class="page-title" style="font-size:1.6rem">Enter Their Code</div>
+    <div class="page-subtitle">Paste the code they sent. You'll ride the exact run they had.</div>
+    <div class="field"><label>Your name</label><input type="text" id="n2" class="p2-focus" maxlength="18" placeholder="Player Two" value="${esc(S.p2Name)}"></div>
+    <div class="field"><label>Their name (optional)</label><input type="text" id="n1b" class="p2-focus" maxlength="18" placeholder="Player One" value="${esc(S.p1Name)}"></div>
+    <div class="field"><label>Duel code</label><input type="text" id="ci" class="p2-focus" placeholder="LE-K3F9-..." style="text-transform:uppercase;font-weight:700"></div>
+    <div class="err-msg" id="ce"></div>
+    <button class="btn btn-primary" onclick="takeCode()">Take It On →</button>
+  </div></div>`;
+}
+function takeCode(){
+  S.p2Name=document.getElementById('n2').value.trim()||'Player Two';
+  S.p1Name=document.getElementById('n1b').value.trim()||'Player One';
+  const e=document.getElementById('ce');
+  try{
+    const p=parseCode(document.getElementById('ci').value);
+    S.mode=p.mode;S.seed=p.seed;S.settings=p.settings;S.nudges=p.nudges;S.p1Result=p.result;
+    if(S.mode==='edgewithme'){S.ewmOffsets=p.result.edgeMarks.map(ms=>ms/1000);}
+    e.textContent='';nav('ready');
+  }catch(err){e.textContent=err.message;}
+}
+function vReady(){
+  const m=MODES[S.mode];
+  const r=S.p1Result;
+  app.innerHTML=`<div class="screen active"><div class="wrap">
+    <button class="back-link" onclick="nav('enter')">‹ Back</button>
+    <div class="page-title" style="font-size:1.6rem">${m.title}</div>
+    <div class="page-subtitle">${m.goal}</div>
+    <div class="badge" style="font-size:.95rem;max-width:100%;text-align:center;line-height:1.4">${targetHint()}</div>
+    ${S.mode==='edgewithme'?`<div class="page-subtitle">When the ring appears, land your edge as close to zero as you can.</div>`:''}
+    <button class="btn btn-primary" onclick="startRun()">Start My Run →</button>
+  </div></div>`;
+}
+
+/* ---------- Edge With Me (P2 matching) ---------- */
+function armNextEwm(){
+  if(S.ewmIdx>=S.ewmOffsets.length)return;
+  const t=S.ewmOffsets[S.ewmIdx];
+  const now=(Date.now()-S.playStart)/1000;
+  S._to=setTimeout(()=>{S.ewmTarget=t;S.ewmArmed=true;render();runCd();},Math.max(200,(t-5-now)*1000));
+}
+function runCd(){
+  clearInterval(S._cd);
+  S._cd=setInterval(()=>{
+    const c=document.getElementById('cdC'),n=document.getElementById('cdN');
+    if(!c)return;
+    const rem=S.ewmTarget-(Date.now()-S.playStart)/1000;
+    if(rem<=-3){recEwm();return;}
+    c.setAttribute('stroke-dashoffset',String(553*(1-clamp(rem/5,0,1))));
+    n.textContent=rem>0?Math.ceil(rem):'0';
+    n.style.color=rem<=0?'var(--p2)':'var(--gold)';
+  },100);
+}
+function recEwm(){
+  clearInterval(S._cd);
+  const d=(Date.now()-S.playStart)/1000-S.ewmTarget;
+  S.ewmMatches.push(d);
+  S.ewmArmed=false;S.ewmIdx++;
+  toast((d>=0?'+':'')+d.toFixed(1)+'s');
+  if(S.ewmIdx>=S.ewmOffsets.length){finishEwm(false);return;}
+  render();armNextEwm();
+}
+function vEwmPlay(){
+  let mid;
+  if(S.ewmArmed){
+    mid=`<div class="countdown-label">Match their edge</div>
+    <div class="countdown-ring"><svg width="200" height="200">
+      <circle cx="100" cy="100" r="88" fill="none" stroke="#3a2530" stroke-width="8"/>
+      <circle id="cdC" cx="100" cy="100" r="88" fill="none" stroke="url(#gg)" stroke-width="8" stroke-linecap="round" stroke-dasharray="553" stroke-dashoffset="0"/>
+      <defs><linearGradient id="gg"><stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs>
+    </svg><div class="cd-num" id="cdN">5</div></div>
+    <button class="btn btn-edge" onclick="recEwm()">Edged Now</button>`;
+  }else{
+    mid=`<div class="radar-wrap"><div class="radarRing"></div><div class="radarPulse" id="rPulse"></div>
+      <div class="radarCore" id="rCore"></div><div class="bpm-readout" id="bpmReadout">— bpm</div></div>
+      <div class="nudge-hint">Building — the ring appears five seconds before each of their edges.</div>`;
+  }
+  app.innerHTML=`<div class="screen active"><div class="wrap">
+    <div class="duel-header"><div class="duel-name side-p2">${esc(S.p2Name)}</div>
+    <div class="duel-name" style="color:var(--muted);font-size:.85rem">Edge With Me</div></div>
+    <div class="duel-timer" id="clk">0:00</div>
+    <div class="badge">${S.ewmIdx} of ${S.ewmOffsets.length} matched</div>
+    ${mid}
+    <button class="btn btn-over" style="margin-top:14px" onclick="finishEwm(true)">Went Over</button>
+    <button class="btn btn-ghost btn-sm" onclick="abandon()">Abandon run</button>
+  </div></div>`;
+  paintClock();
+}
+function finishEwm(over){
+  stopMetro();clearInterval(S._ci);clearInterval(S._cd);clearTimeout(S._to);
+  S.p2Result={totalMs:Date.now()-S.playStart,edgeMarks:[],wentOver:over,banked:false,matches:S.ewmMatches.slice()};
+  nav('compare');
+}
+
+/* ═══════════ COMPARE ═══════════ */
+function winner(){
+  const a=S.p1Result,b=S.p2Result;
+  if(!a||!b)return null;
+  switch(S.mode){
+    case 'fastest':{
+      const av=a.wentOver?Infinity:a.totalMs,bv=b.wentOver?Infinity:b.totalMs;
+      if(av===bv)return 'tie';return av<bv?'p1':'p2';}
+    case 'battle':{
+      if(a.edgeMarks.length!==b.edgeMarks.length)return a.edgeMarks.length>b.edgeMarks.length?'p1':'p2';
+      return 'tie';}
+    case 'chicken':{
+      const av=a.wentOver?0:a.totalMs,bv=b.wentOver?0:b.totalMs;
+      if(av===bv)return 'tie';return av>bv?'p1':'p2';}
+    case 'sustain':{
+      if(a.wentOver!==b.wentOver)return a.wentOver?'p2':'p1';
+      if(a.totalMs===b.totalMs)return 'tie';
+      return a.totalMs>b.totalMs?'p1':'p2';}
+    case 'edgewithme':return 'sync';
+    default:{
+      if(a.wentOver!==b.wentOver)return a.wentOver?'p2':'p1';
+      if(a.totalMs===b.totalMs)return 'tie';
+      return a.totalMs>b.totalMs?'p1':'p2';}
+  }
+}
+function syncGrade(avg){
+  if(avg<1)return 'Uncanny';
+  if(avg<2.5)return 'Locked in';
+  if(avg<5)return 'Close enough';
+  if(avg<10)return 'Loose';
+  return 'Miles off';
+}
+function row(l,v1,v2,w){return `<tr><td class="stat-label">${l}</td><td class="${w==='p1'?'win':''}">${v1}</td><td class="${w==='p2'?'win':''}">${v2}</td></tr>`;}
+function vCompare(){
+  const a=S.p1Result,b=S.p2Result,w=winner();
+  let head,rows='';
+  if(S.mode==='edgewithme'){
+    const ms=b.matches||[];
+    const avg=ms.length?ms.reduce((x,y)=>x+Math.abs(y),0)/ms.length:0;
+    head=`${esc(S.p2Name)} — ${syncGrade(avg)}`;
+    rows+=row('Edges matched',a.edgeMarks.length,ms.length,null);
+    rows+=row('Average gap','—',avg.toFixed(1)+'s',null);
+    ms.forEach((d,i)=>{rows+=row('Edge '+(i+1),fmtTime(a.edgeMarks[i]||0),(d>=0?'+':'')+d.toFixed(1)+'s '+(d>=0?'late':'early'),null);});
+  }else{
+    head=w==='tie'?'Dead heat':(w==='p1'?esc(S.p1Name):esc(S.p2Name))+' wins';
+    if(S.mode==='battle'){
+      rows+=row('Edges landed',a.edgeMarks.length,b.edgeMarks.length,w);
+      rows+=row('Time used',fmtTime(a.totalMs),fmtTime(b.totalMs),null);
+    }else if(S.mode==='chicken'){
+      rows+=row('Banked',a.wentOver?'0:00':fmtTime(a.totalMs),b.wentOver?'0:00':fmtTime(b.totalMs),w);
+      rows+=row('Went over?',a.wentOver?'Yes':'No',b.wentOver?'Yes':'No',null);
+    }else if(S.mode==='sustain'){
+      rows+=row('Time sustained',fmtTime(a.totalMs),fmtTime(b.totalMs),w);
+      rows+=row('Went over?',a.wentOver?'Yes':'No',b.wentOver?'Yes':'No',null);
+    }else{
+      rows+=row(S.mode==='fastest'?'Time to edge':'Time held',fmtTime(a.totalMs),fmtTime(b.totalMs),w);
+      rows+=row('Went over?',a.wentOver?'Yes':'No',b.wentOver?'Yes':'No',null);
+      if(S.mode==='settrap')rows+=row('Pattern shaped by',esc(S.p1Name),'\u2014',null);
+    }
+  }
+  const share=shareText();
+  app.innerHTML=`<div class="screen active"><div class="wrap">
+    <div class="result-hero"><div class="r-winner">${head}</div></div>
+    <table class="compare-table"><thead><tr><th class="stat-label"></th>
+      <th class="th-p1">${esc(S.p1Name)}</th><th class="th-p2">${esc(S.p2Name)}</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+    <div class="share-box"><pre id="sh">${share}</pre></div>
+    <button class="btn btn-primary" onclick="copyText(shareText(),'Summary')">Copy Summary for Discord</button>
+    <button class="btn btn-ghost" onclick="abandon()">New duel</button>
+  </div></div>`;
+}
+function shareText(){
+  const a=S.p1Result,b=S.p2Result,m=MODES[S.mode],w=winner();
+  let t='⚔️ VS EDGER — '+m.title+'\n';
+  if(S.mode==='edgewithme'){
+    const ms=b.matches||[];
+    const avg=ms.length?ms.reduce((x,y)=>x+Math.abs(y),0)/ms.length:0;
+    t+=S.p1Name+' set '+a.edgeMarks.length+' edge'+(a.edgeMarks.length===1?'':'s')+'\n';
+    t+=S.p2Name+' matched '+ms.length+' — avg '+avg.toFixed(1)+'s off\n';
+    t+='\n🎯 '+syncGrade(avg);
+    return t;
+  }
+  const line=(n,r)=>{
+    if(S.mode==='battle')return n+': '+r.edgeMarks.length+' edge'+(r.edgeMarks.length===1?'':'s')+' in '+fmtTime(r.totalMs);
+    if(S.mode==='chicken')return n+': '+(r.wentOver?'BUST':fmtTime(r.totalMs)+' banked');
+    if(S.mode==='sustain')return n+': '+fmtTime(r.totalMs)+' sustained'+(r.wentOver?' \u00b7 went over':'');
+    return n+': '+fmtTime(r.totalMs)+(r.wentOver?' · went over':'');
+  };
+  t+=line(S.p1Name,a)+'\n'+line(S.p2Name,b)+'\n';
+  t+='\n'+(w==='tie'?'🤝 Dead heat':'🏆 '+(w==='p1'?S.p1Name:S.p2Name)+' wins');
+  return t;
+}
+
+render();
+</script>
+</body>
+</html>
